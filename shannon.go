@@ -159,18 +159,24 @@ func (sInst *Shannon) macFunc(i uint32) {
 func (sInst *Shannon) process(buf []byte, fullWord fullWordCallback, partial byteCallback) {
 	// handle any previously buffered bytes
 	if sInst.nbuf != 0 {
-		for i := 0; sInst.nbuf > 0; i++ {
-			if i < len(buf) {
-				partial(sInst, &buf[i])
-				sInst.nbuf -= 8
-			} else {
-				// not a whole word yet
-				return
-			}
-			// LFSR already cycled
-			m := sInst.mbuf
-			sInst.macFunc(m)
+		i := 0
+		for sInst.nbuf > 0 && i < len(buf) {
+			partial(sInst, &buf[i])
+			sInst.nbuf -= 8
+			i++
 		}
+
+		// advance input buffer
+		buf = buf[i:]
+
+		if sInst.nbuf != 0 {
+			// not a whole word yet
+			return
+		}
+
+		// LFSR already cycled
+		m := sInst.mbuf
+		sInst.macFunc(m)
 	}
 
 	// handle whole words
